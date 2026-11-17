@@ -205,3 +205,181 @@
   </script>
 </body>
 </html>
+
+
+Amireshon 81
+۰:۱۴ ‎(۳ دقیقه پیش)‎
+echo '[{"origin": ["*"],"method": ["GET", "PUT", "POST", "DELETE", "OPTIONS"],"maxAgeSeconds": 3600}]' > cors.json gsutil cors set cors.json gs://riazixm.fireba
+
+Amireshon 81 <amireshon20@gmail.com‏>
+۰:۱۷ ‎(۰ دقیقه پیش)‎
+به amirhosseinzx81@gmail.com
+
+      const [correctAnswers, setCorrectAnswers] = useState({});
+      const [uploading, setUploading] = useState(false);
+      const [message, setMessage] = useState('');
+
+      const [studentPass, setStudentPass] = useState('');
+      const [activeExam, setActiveExam] = useState(null);
+      const [studentAnswers, setStudentAnswers] = useState({});
+      const [score, setScore] = useState(null);
+
+      const handleTeacherLogin = () => {
+        if (loginPass === '1234') { setTeacherLoggedIn(true); } 
+        else { alert('رمز عبور استاد اشتباه است.'); }
+      };
+
+      const handleCreateExam = async () => {
+        if (!examTitle || !examPassword || !file) {
+          setMessage('لطفاً عنوان، رمز و فایل سوالات را وارد کنید.');
+          return;
+        }
+        if (Object.keys(correctAnswers).length < questionCount) {
+          setMessage('لطفاً پاسخنامه کلیدی را برای تمام سوالات تکمیل کنید.');
+          return;
+        }
+        
+        setUploading(true);
+        try {
+          const storageRef = storage.ref(`exams/${Date.now()}_${file.name}`);
+          const snapshot = await storageRef.put(file);
+          const downloadURL = await snapshot.ref.getDownloadURL();
+          
+          await db.collection("exams").add({
+            title: examTitle,
+            password: examPassword,
+            fileUrl: downloadURL,
+            questionCount: parseInt(questionCount),
+            correctAnswers: correctAnswers,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          setMessage('✅ آزمون با موفقیت ساخته شد و در سرور ذخیره گردید.');
+          setExamTitle(''); setExamPassword(''); setFile(null); setCorrectAnswers({});
+        } catch (error) {
+          setMessage('❌ خطا در آپلود: ' + error.message);
+        }
+        setUploading(false);
+      };
+
+      const handleStudentLogin = async () => {
+        setUploading(true);
+        try {
+          const snapshot = await db.collection("exams").where("password", "==", studentPass).get();
+          if (snapshot.empty) {
+            alert('آزمونی با این رمز یافت نشد.');
+          } else {
+            setActiveExam(snapshot.docs[0].data());
+          }
+        } catch (e) {
+          alert('خطا در ارتباط با سرور. لطفا فیلترشکن را بررسی کنید.');
+        }
+        setUploading(false);
+      };
+
+      const submitExam = () => {
+        let correctCount = 0;
+        let wrongCount = 0;
+        let emptyCount = 0;
+        const total = activeExam.questionCount;
+
+        for (let i = 0; i < total; i++) {
+          if (!studentAnswers[i]) {
+            emptyCount++;
+          } else if (studentAnswers[i] === activeExam.correctAnswers[i]) {
+            correctCount++;
+          } else {
+            wrongCount++;
+          }
+        }
+        
+        // محاسبه درصد کنکوری (3 غلط = 1 منفی)
+        const percent = (((correctCount * 3) - wrongCount) / (total * 3) * 100).toFixed(1);
+        
+        setScore({ correctCount, wrongCount, emptyCount, percent });
+                  <div className="bg-blue-50 p-4 rounded-xl mt-4 border border-blue-100">
+                    <h3 className="font-bold mb-4 text-center text-blue-800">تعیین پاسخنامه کلیدی برای تصحیح خودکار</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Array.from({ length: questionCount }).map((_, i) => (
+                        <div key={i} className="flex items-center justify-between bg-white p-2 rounded shadow-sm">
+                          <span className="font-bold w-8">{i + 1}-</span>
+                          {[1, 2, 3, 4].map(opt => (
+                            <label key={opt} className="mx-1 cursor-pointer">
+                              <input type="radio" name={`correct_q${i}`} onChange={() => setCorrectAnswers({...correctAnswers, [i]: opt})} className="mr-1" /> {opt}
+                            </label>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button onClick={handleCreateExam} disabled={uploading} className="w-full py-4 mt-4 bg-green-600 text-white rounded font-bold shadow-lg hover:bg-green-700">
+                    {uploading ? 'در حال آپلود و پردازش...' : 'آپلود و ذخیره نهایی آزمون'}
+                  </button>
+                  {message && <p className="text-center font-bold text-red-600 mt-2">{message}</p>}
+                  <button onClick={() => setRole(null)} className="w-full py-2 bg-gray-200 text-gray-700 rounded mt-4">خروج از پنل</button>
+                </div>
+              )}
+
+              {role === 'student' && !activeExam && (
+                <div className="space-y-4 text-center">
+                  <h2 className="font-bold text-xl mb-4">ورود به آزمون</h2>
+                  <input type="text" placeholder="رمز آزمون را وارد کنید" className="w-full p-3 border rounded text-center" value={studentPass} onChange={e => setStudentPass(e.target.value)} />
+                  <button onClick={handleStudentLogin} disabled={uploading} className="w-full py-3 bg-emerald-600 text-white rounded font-bold">
+                    {uploading ? 'در حال جستجو...' : 'ورود به جلسه'}
+                  </button>
+                  <button onClick={() => setRole(null)} className="text-gray-500 underline mt-4 block w-full">بازگشت</button>
+                </div>
+              )}
+
+              {role === 'student' && activeExam && !score && (
+                <div className="space-y-6">
+                  <h2 className="font-bold text-xl text-center text-blue-800">{activeExam.title}</h2>
+                  <div className="w-full h-96 border rounded overflow-hidden">
+                    <iframe src={activeExam.fileUrl} className="w-full h-full"></iframe>
+                  </div>
+                  <div className="bg-gray-100 p-4 rounded-xl">
+                    <h3 className="font-bold mb-4 text-center">پاسخبرگ آزمون</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Array.from({ length: activeExam.questionCount }).map((_, i) => (
+                        <div key={i} className="flex items-center justify-between bg-white p-2 rounded shadow-sm">
+                          <span className="font-bold w-8">{i + 1}-</span>
+                          {[1, 2, 3, 4].map(opt => (
+                            <label key={opt} className="mx-1 cursor-pointer">
+                              <input type="radio" name={`student_q${i}`} onChange={() => setStudentAnswers({...studentAnswers, [i]: opt})} className="mr-1" /> {opt}
+                            </label>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={submitExam} className="w-full py-4 bg-red-600 text-white font-bold rounded-xl shadow-lg hover:bg-red-700">پایان آزمون و مشاهده کارنامه</button>
+                </div>
+              )}
+
+              {score && (
+                <div className="text-center p-8 bg-slate-100 rounded-xl border border-slate-300 shadow-inner">
+                  <h2 className="text-2xl font-bold text-slate-800 mb-6 border-b pb-4">کارنامه آزمون</h2>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-green-100 p-3 rounded-lg"><span className="block text-sm text-green-800">صحیح</span><span className="font-bold text-2xl text-green-600">{score.correctCount}</span></div>
+                    <div className="bg-red-100 p-3 rounded-lg"><span className="block text-sm text-red-800">غلط</span><span className="font-bold text-2xl text-red-600">{score.wrongCount}</span></div>
+                    <div className="bg-gray-200 p-3 rounded-lg col-span-2"><span className="block text-sm text-gray-700">نزده</span><span className="font-bold text-xl text-gray-600">{score.emptyCount}</span></div>
+                  </div>
+                  <div className="bg-blue-600 p-4 rounded-xl text-white">
+                    <span className="block text-blue-200 mb-1">درصد کل (با نمره منفی)</span>
+                    <span className="text-3xl font-bold">٪ {score.percent}</span>
+                  </div>
+                  <button onClick={() => window.location.reload()} className="mt-8 px-8 py-3 bg-slate-700 text-white rounded font-bold">بازگشت به صفحه اصلی</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
