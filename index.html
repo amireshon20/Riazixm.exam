@@ -10,8 +10,6 @@
   
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  
-  <!-- ارتقا به نسخه 7 برای جلوگیری از باگ صفحه سفید -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -23,7 +21,7 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState } = React;
 
     const firebaseConfig = {
       apiKey: "AIzaSyBWLduVJYmmoldCSCacdA0ZKCQ61o9HVUE",
@@ -61,13 +59,13 @@
       };
 
       const handleCreateExam = async () => {
-        if (!examTitle  !examPassword  !file) {
+        if (examTitle === '' || examPassword === '' || file === null) {
           setMessage('لطفاً عنوان، رمز و فایل سوالات را وارد کنید.');
           return;
         }
         setUploading(true);
         try {
-          const storageRef = storage.ref(exams/${Date.now()}_${file.name});
+          const storageRef = storage.ref(`exams/${Date.now()}_${file.name}`);
           const snapshot = await storageRef.put(file);
           const downloadURL = await snapshot.ref.getDownloadURL();
           
@@ -101,9 +99,10 @@
         }
         setUploading(false);
       };
+
       const submitExam = () => {
         let correct = Object.keys(studentAnswers).length; 
-        setScore(شما به ${correct} سوال پاسخ دادید. (سیستم تصحیح خودکار ثبت شد));
+        setScore(`شما به ${correct} سوال پاسخ دادید. (سیستم تصحیح خودکار ثبت شد)`);
       };
 
       return (
@@ -177,7 +176,7 @@
                           <span className="font-bold w-8">{i + 1}-</span>
                           {[1, 2, 3, 4].map(opt => (
                             <label key={opt} className="mx-1 cursor-pointer">
-                              <input type="radio" name={q${i}} onChange={() => setStudentAnswers({...studentAnswers, [i]: opt})} className="mr-1" /> {opt}
+                              <input type="radio" name={`q${i}`} onChange={() => setStudentAnswers({...studentAnswers, [i]: opt})} className="mr-1" /> {opt}
                             </label>
                           ))}
                         </div>
